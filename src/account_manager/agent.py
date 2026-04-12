@@ -14,12 +14,15 @@ from .tools import ALL_TOOLS
 
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
+# REFLECTION_ENABLED=false 로 설정하면 반성 단계를 건너뜀 (응답 속도 2배 향상)
+REFLECTION_ENABLED = os.environ.get("REFLECTION_ENABLED", "true").lower() != "false"
 
 SYSTEM_PROMPT = """당신은 사용자의 웹사이트 계정 정보를 관리하는 AI 어시스턴트입니다.
 사용자가 계정 정보를 조회, 저장, 업데이트, 삭제하도록 도와주세요.
 
 중요 규칙:
-1. 비밀번호는 사용자가 명시적으로 요청할 때만 show_password=True로 tool_get_account를 호출하세요.
+1. 사용자가 "로그인 정보", "계정 정보", "비밀번호"를 요청하면 show_password=True로 tool_get_account를 호출하세요.
+   단순히 계정 존재 여부만 묻는 경우에는 show_password=False로 호출하세요.
 2. 계정 삭제 전에 반드시 사용자에게 확인을 요청하세요.
 3. 새 계정 저장 시 site명, 이메일/아이디, 비밀번호, URL을 최소한 수집하세요.
 4. 답변은 한국어로 하고, 정확하고 간결하게 응답하세요.
@@ -105,9 +108,10 @@ def create_agent():
         last_message = state["messages"][-1]
         if isinstance(last_message, AIMessage) and last_message.tool_calls:
             return "tools"
-        reflection_count = state.get("reflection_count", 0)
-        if reflection_count < 1:
-            return "reflect"
+        if REFLECTION_ENABLED:
+            reflection_count = state.get("reflection_count", 0)
+            if reflection_count < 1:
+                return "reflect"
         return "end"
 
     graph = StateGraph(AgentState)
