@@ -1,4 +1,5 @@
 """account_manager - 메인 진입점"""
+import getpass
 import os
 import sys
 from pathlib import Path
@@ -75,7 +76,7 @@ def handle_slash_command(command: str) -> bool:
         email = console.input("[cyan]이메일/아이디: [/cyan]").strip()
         if email:
             fields["이메일"] = email
-        password = console.input("[cyan]비밀번호: [/cyan]").strip()
+        password = getpass.getpass("비밀번호 (입력 내용 숨김): ").strip()
         if password:
             fields["비밀번호"] = password
         memo = console.input("[cyan]메모 (선택): [/cyan]").strip()
@@ -115,8 +116,9 @@ def handle_slash_command(command: str) -> bool:
 def main():
     print_banner()
 
-    # prompt_toolkit 세션 설정
-    history_file = Path(".prompt_history")
+    # prompt_toolkit 세션 설정 - 이력 파일을 홈 디렉토리에 저장 (프로젝트 폴더 노출 방지)
+    history_file = Path.home() / ".account_manager" / ".prompt_history"
+    history_file.parent.mkdir(parents=True, exist_ok=True)
     session = PromptSession(
         history=FileHistory(str(history_file)),
         auto_suggest=AutoSuggestFromHistory(),

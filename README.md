@@ -75,30 +75,43 @@ uv run python -m account_manager.main
 
 ## 계정 파일 형식
 
-`accounts/` 디렉토리의 마크다운 파일을 직접 편집할 수 있습니다:
+`accounts/accounts.yaml`을 직접 편집할 수 있습니다:
 
-```markdown
----
-site: Google
-url: https://google.com
-category: 이메일/검색
-이메일: example@gmail.com
-비밀번호: [암호화된 값 - AI가 자동 처리]
-updated: 2026-04-11
----
-
-## 메모
-- 복구 이메일: backup@email.com
-- 2FA: 활성화
+```yaml
+이메일:
+  gmail:
+    site: Gmail
+    url: https://gmail.com
+    이메일: user@gmail.com
+    비밀번호: gAAAAA...  # 암호화됨 (AI가 자동 처리)
+    메모: 2FA 활성화
+    updated: '2026-04-11'
 ```
 
-> **주의**: 비밀번호를 직접 편집할 경우 평문으로 저장됩니다. AI를 통해 업데이트하면 자동 암호화됩니다.
+> **주의**: 비밀번호를 직접 평문으로 입력하면 다음번 AI 업데이트 시 자동 암호화됩니다.
 
 ## 보안 구조
 
 - 암호화 키: `~/.account_manager/.key` (권한: 600)
 - 비밀번호: Fernet 대칭 암호화로 저장
-- 계정 파일: `accounts/` 디렉토리 (`.gitignore`로 git 제외)
+- 계정 파일: `accounts/accounts.yaml` (`.gitignore`로 git 제외)
+- 터미널 입력 이력: `~/.account_manager/.prompt_history` (프로젝트 외부)
+
+## 암호화 키 백업
+
+> ⚠️ **중요**: 암호화 키를 분실하면 저장된 모든 비밀번호를 복구할 수 없습니다.
+
+```bash
+# 키 파일 위치 확인
+ls -la ~/.account_manager/.key
+
+# 안전한 곳에 백업 (USB, 외장 드라이브 등)
+cp ~/.account_manager/.key /path/to/safe/backup/.key
+
+# 복원 시
+cp /path/to/safe/backup/.key ~/.account_manager/.key
+chmod 600 ~/.account_manager/.key
+```
 
 ## 환경 설정 (.env)
 

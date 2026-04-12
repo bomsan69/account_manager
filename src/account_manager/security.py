@@ -1,5 +1,6 @@
 """암호화/복호화 모듈 - Fernet 대칭 암호화 사용"""
 import os
+import sys
 from pathlib import Path
 from cryptography.fernet import Fernet
 
@@ -15,6 +16,13 @@ def _load_or_create_key() -> bytes:
     key = Fernet.generate_key()
     KEY_FILE.write_bytes(key)
     KEY_FILE.chmod(0o600)
+    print(
+        f"\n⚠️  [보안 경고] 새 암호화 키가 생성되었습니다: {KEY_FILE}\n"
+        "   이 키를 안전한 곳에 백업하세요.\n"
+        "   키를 분실하면 저장된 모든 비밀번호를 복구할 수 없습니다!\n"
+        "   백업 방법: README.md의 '암호화 키 백업' 섹션을 참고하세요.\n",
+        file=sys.stderr,
+    )
     return key
 
 

@@ -1,0 +1,31 @@
+# Account Manager - 계정 정보 예시 파일
+# 이 파일을 accounts.yaml로 복사한 후 실제 정보를 입력하세요:
+#   cp accounts/accounts.example.yaml accounts/accounts.yaml
+#
+# 비밀번호는 AI를 통해 저장하면 자동으로 암호화됩니다.
+# 직접 편집 시 평문으로 입력하면 다음 AI 업데이트 시 자동 암호화됩니다.
+
+이메일:
+  example_mail:
+    site: ExampleMail
+    url: https://example.com
+    이메일: user@example.com
+    비밀번호: <YOUR_PASSWORD_HERE>
+    메모: 예시 계정 - 삭제 후 실제 정보를 입력하세요
+    updated: '2026-01-01'
+
+호스팅:
+  example_hosting:
+    site: ExampleHosting
+    url: https://example-hosting.com
+    이메일: admin@example.com
+    비밀번호: <YOUR_PASSWORD_HERE>
+    updated: '2026-01-01'
+
+SNS:
+  example_sns:
+    site: ExampleSNS
+    url: https://example-sns.com
+    아이디: your_id_here
+    비밀번호: <YOUR_PASSWORD_HERE>
+    updated: '2026-01-01'

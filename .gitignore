@@ -1,11 +1,23 @@
 .venv/
 __pycache__/
 *.pyc
+
+# 민감 설정
 .env
-accounts/*.md
-!accounts/example_google.md
+
+# 실제 계정 데이터 (절대 커밋 금지)
+accounts/accounts.yaml
+accounts/*.yaml
+!accounts/accounts.example.yaml
+
+# 세션 기억 및 이력 (개인 데이터)
 memory/HISTORY.md
 memory/MEMORY.md
+memory/
+
+# 터미널 입력 이력
 .prompt_history
+
+# 빌드
 *.egg-info/
 dist/
