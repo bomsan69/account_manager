@@ -93,10 +93,16 @@ fi
 
 # ── account_manager 설치 ──────────────────────────────────────
 info "account_manager를 설치합니다... (Python $VER 사용)"
-# --python 으로 확인된 버전을 명시적으로 지정 (pipx 기본 Python이 3.14일 경우 대비)
+
+# 기존 venv가 다른 Python 버전으로 만들어져 있으면 충돌하므로 먼저 제거
+if pipx list 2>/dev/null | grep -q "account-manager"; then
+  warn "기존 account-manager 설치를 제거합니다..."
+  pipx uninstall account-manager
+fi
+
+# --python 으로 확인된 버전을 명시적으로 지정
 pipx install git+https://github.com/bomsan69/account_manager.git \
-  --python "$PYTHON" \
-  --force
+  --python "$PYTHON"
 success "account_manager 설치 완료"
 
 # ── 데이터 디렉토리 초기화 ────────────────────────────────────
