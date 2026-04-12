@@ -74,22 +74,32 @@ def tool_get_account(site: str, show_password: bool = False) -> str:
 
 
 @tool
-def tool_save_account(site: str, fields_yaml: str, memo: str = "") -> str:
+def tool_save_account(
+    site: str,
+    category: str = "기타",
+    url: str = "",
+    이메일: str = "",
+    아이디: str = "",
+    비밀번호: str = "",
+    memo: str = "",
+) -> str:
     """
-    계정 정보를 저장하거나 업데이트합니다.
-    비밀번호는 자동으로 암호화됩니다.
+    계정 정보를 저장하거나 업데이트합니다. 비밀번호는 자동으로 암호화됩니다.
 
     Args:
-        site: 사이트명 (예: "Google", "Naver")
-        fields_yaml: YAML 형식의 필드 데이터
-                     예: "이메일: test@gmail.com\\n비밀번호: mypass123\\nurl: https://google.com"
-        memo: 자유 형식의 메모 (선택)
+        site: 사이트명 (예: "Google", "OpenRouter")
+        category: 카테고리 (예: "이메일", "SNS", "API", "호스팅", "기타")
+        url: 사이트 URL (예: "https://google.com")
+        이메일: 로그인 이메일 주소
+        아이디: 이메일이 아닌 경우의 아이디/username
+        비밀번호: 로그인 비밀번호 (자동 암호화됨)
+        memo: 메모 (2FA 여부, 복구 이메일 등 자유 형식)
     """
-    import yaml
-    try:
-        fields = yaml.safe_load(fields_yaml) or {}
-    except Exception as e:
-        return f"필드 파싱 오류: {e}\nYAML 형식으로 입력해주세요."
+    fields = {"category": category}
+    if url:       fields["url"] = url
+    if 이메일:    fields["이메일"] = 이메일
+    if 아이디:    fields["아이디"] = 아이디
+    if 비밀번호:  fields["비밀번호"] = 비밀번호
 
     account = save_account(site=site, fields=fields, body=memo)
     record_history(site, "저장", f"필드: {', '.join(fields.keys())}")

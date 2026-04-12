@@ -2,7 +2,7 @@
 import os
 from typing import Annotated, Literal
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
@@ -68,16 +68,13 @@ def create_agent():
         if not last_ai_msg:
             return state
 
-        reflection_prompt = f"""다음 답변을 검토하세요:
+        reflection_prompt = f"""아래는 AI가 사용자에게 보낸 답변입니다:
 ---
 {last_ai_msg.content}
 ---
-이 답변이 사용자의 질문에 정확하고 완전하게 답하고 있나요?
-- 누락된 정보가 있다면 보완하세요.
-- 잘못된 정보가 있다면 수정하세요.
-- 답변이 충분하면 그대로 유지하세요.
-
-간결하고 정확한 최종 답변만 반환하세요."""
+위 답변에 누락되거나 잘못된 정보가 있으면 수정하여 완전한 답변을 작성하세요.
+답변이 이미 정확하고 완전하다면, 위 답변을 그대로 복사해서 반환하세요.
+절대로 답변의 품질에 대한 평가나 코멘트를 하지 마세요. 오직 최종 답변 내용만 반환하세요."""
 
         memory_content = read_memory()
         system_msg = SystemMessage(content=SYSTEM_PROMPT.format(memory=memory_content))
@@ -87,8 +84,11 @@ def create_agent():
         llm = ChatOllama(base_url=OLLAMA_BASE_URL, model=OLLAMA_MODEL, temperature=0)
         refined = llm.invoke(messages)
 
-        # 반성 결과가 의미있게 다르면 교체
-        if refined.content and refined.content != last_ai_msg.content:
+        # 메타 코멘트 감지: 실제 답변 대신 품질 평가를 반환한 경우 원본 유지
+        meta_keywords = ["유지합니다", "정확합니다", "완전합니다", "충분합니다", "검토 결과", "답변이 적절"]
+        is_meta = any(kw in refined.content for kw in meta_keywords)
+
+        if not is_meta and refined.content and refined.content != last_ai_msg.content:
             new_messages = []
             replaced = False
             for msg in state["messages"]:
@@ -109,9 +109,6 @@ def create_agent():
         if reflection_count < 1:
             return "reflect"
         return "end"
-
-    def after_tools(state: AgentState) -> Literal["agent"]:
-        return "agent"
 
     graph = StateGraph(AgentState)
     graph.add_node("agent", agent_node)
@@ -175,7 +172,7 @@ def chat(message: str, history: list) -> str:
 
     result = agent.invoke(
         {"messages": lc_history, "reflection_count": 0},
-        config={"recursion_limit": 25},
+        config={"recursion_limit": 50},
     )
 
     # 마지막 AI 메시지 반환
