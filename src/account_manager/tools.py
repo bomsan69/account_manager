@@ -76,34 +76,45 @@ def tool_get_account(site: str, show_password: bool = False) -> str:
 @tool
 def tool_save_account(
     site: str,
+    auth_method: str = "password",
     category: str = "기타",
     url: str = "",
     이메일: str = "",
     아이디: str = "",
     비밀번호: str = "",
+    oauth_provider: str = "",
+    oauth_account: str = "",
+    api_key: str = "",
     memo: str = "",
 ) -> str:
     """
-    계정 정보를 저장하거나 업데이트합니다. 비밀번호는 자동으로 암호화됩니다.
+    계정 정보를 저장하거나 업데이트합니다. 비밀번호/API키는 자동으로 암호화됩니다.
 
     Args:
-        site: 사이트명 (예: "Google", "OpenRouter")
+        site: 사이트명 (예: "Notion", "GitHub")
+        auth_method: 인증 방식 - password(기본), oauth(소셜로그인), apikey(API키), passkey(패스키)
         category: 카테고리 (예: "이메일", "SNS", "API", "호스팅", "기타")
-        url: 사이트 URL (예: "https://google.com")
-        이메일: 로그인 이메일 주소
-        아이디: 이메일이 아닌 경우의 아이디/username
-        비밀번호: 로그인 비밀번호 (자동 암호화됨)
-        memo: 메모 (2FA 여부, 복구 이메일 등 자유 형식)
+        url: 사이트 URL
+        이메일: 로그인 이메일 (password/passkey 방식)
+        아이디: 이메일이 아닌 아이디/username (password 방식)
+        비밀번호: 로그인 비밀번호 (password 방식, 자동 암호화)
+        oauth_provider: OAuth 제공자 (oauth 방식, 예: "Google", "GitHub", "Kakao", "Naver", "Apple")
+        oauth_account: OAuth 인증에 사용하는 계정 이메일 (oauth 방식)
+        api_key: API 키 (apikey 방식, 자동 암호화)
+        memo: 메모 (2FA 여부, 복구 정보 등)
     """
-    fields = {"category": category}
-    if url:       fields["url"] = url
-    if 이메일:    fields["이메일"] = 이메일
-    if 아이디:    fields["아이디"] = 아이디
-    if 비밀번호:  fields["비밀번호"] = 비밀번호
+    fields = {"auth_method": auth_method, "category": category}
+    if url:            fields["url"] = url
+    if 이메일:         fields["이메일"] = 이메일
+    if 아이디:         fields["아이디"] = 아이디
+    if 비밀번호:       fields["비밀번호"] = 비밀번호
+    if oauth_provider: fields["oauth_provider"] = oauth_provider
+    if oauth_account:  fields["oauth_account"] = oauth_account
+    if api_key:        fields["api_key"] = api_key
 
     account = save_account(site=site, fields=fields, body=memo)
-    record_history(site, "저장", f"필드: {', '.join(fields.keys())}")
-    return f"'{site}' 계정이 [{account.category}] 카테고리에 저장되었습니다."
+    record_history(site, "저장", f"auth:{auth_method}, 필드: {', '.join(f for f in fields if f not in ('auth_method','category'))}")
+    return f"'{site}' 계정이 [{account.category}] 카테고리에 저장되었습니다. (인증방식: {auth_method})"
 
 
 @tool

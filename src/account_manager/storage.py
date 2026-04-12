@@ -6,10 +6,23 @@
       사이트키:
         site: 사이트 표시명
         url: ...
+        auth_method: password | oauth | apikey | passkey
+        # password 방식
         이메일: ...
         비밀번호: [암호화됨]
+        # oauth 방식
+        oauth_provider: Google | GitHub | Apple | Kakao | Naver 등
+        oauth_account: provider 계정 이메일
+        # apikey 방식
+        api_key: [암호화됨]
         메모: ...
         updated: YYYY-MM-DD
+
+auth_method 종류:
+  password - 이메일/아이디 + 비밀번호
+  oauth    - 소셜 로그인 (Google, GitHub 등), 비밀번호 없음
+  apikey   - API 키 인증
+  passkey  - 패스키/WebAuthn, 비밀번호 없음
 """
 import os
 from datetime import datetime
@@ -29,6 +42,14 @@ DEFAULT_CATEGORY = "기타"
 # 암호화가 필요한 필드
 SENSITIVE_FIELDS = {"password", "비밀번호", "pw", "passwd", "secret", "api_key", "token"}
 
+# 인증 방식 레이블
+AUTH_METHOD_LABELS = {
+    "password": "🔑 비밀번호",
+    "oauth":    "🔗 소셜 로그인 (OAuth)",
+    "apikey":   "🗝️  API 키",
+    "passkey":  "🛡️  패스키",
+}
+
 
 class Account:
     def __init__(self, site: str, key: str, category: str, fields: dict):
@@ -47,16 +68,48 @@ class Account:
         return self.fields.get("메모", "")
 
     def get_display(self, show_password: bool = False) -> str:
-        lines = [f"## {self.site}  `[{self.category}]`"]
-        skip = {"site", "메모"}
-        for key, val in self.fields.items():
-            if key in skip:
+        auth_method = self.fields.get("auth_method", "password")
+        auth_label = AUTH_METHOD_LABELS.get(auth_method, auth_method)
+        lines = [f"## {self.site}  `[{self.category}]`  {auth_label}"]
+
+        # 인증 방식별 표시 순서 정의
+        if auth_method == "oauth":
+            ordered_keys = ["url", "oauth_provider", "oauth_account", "아이디", "이메일"]
+        elif auth_method == "apikey":
+            ordered_keys = ["url", "이메일", "아이디", "api_key"]
+        elif auth_method == "passkey":
+            ordered_keys = ["url", "이메일", "아이디"]
+        else:  # password (기본)
+            ordered_keys = ["url", "이메일", "아이디", "비밀번호"]
+
+        skip = {"site", "메모", "auth_method", "updated", "category"}
+
+        # 정의된 순서로 먼저 출력
+        shown = set()
+        for key in ordered_keys:
+            val = self.fields.get(key)
+            if not val:
                 continue
             if key.lower() in SENSITIVE_FIELDS and isinstance(val, str) and is_encrypted(val):
                 display_val = decrypt(val) if show_password else "****"
             else:
                 display_val = val
             lines.append(f"- **{key}**: {display_val}")
+            shown.add(key)
+
+        # 나머지 필드 출력 (skip 제외)
+        for key, val in self.fields.items():
+            if key in skip or key in shown:
+                continue
+            if key.lower() in SENSITIVE_FIELDS and isinstance(val, str) and is_encrypted(val):
+                display_val = decrypt(val) if show_password else "****"
+            else:
+                display_val = val
+            lines.append(f"- **{key}**: {display_val}")
+
+        updated = self.fields.get("updated", "")
+        if updated:
+            lines.append(f"- **최종 수정**: {updated}")
         memo = self.fields.get("메모", "")
         if memo:
             lines.append(f"\n**메모**: {memo}")
