@@ -33,7 +33,8 @@ _check_python_ver() {
   local major minor
   major=$(echo "$ver" | cut -d. -f1)
   minor=$(echo "$ver" | cut -d. -f2)
-  [[ $major -ge 3 && $minor -ge 10 ]] && echo "$ver" && return 0
+  # 3.10 이상, 3.14 미만 (Pydantic V1 호환 범위)
+  [[ $major -ge 3 && $minor -ge 10 && $minor -lt 14 ]] && echo "$ver" && return 0
   return 1
 }
 
@@ -67,7 +68,7 @@ if [[ -z "$PYTHON" ]] && command -v pyenv &>/dev/null; then
 fi
 
 if [[ -z "$PYTHON" ]]; then
-  error "Python 3.10 이상이 필요합니다.\n  설치: https://www.python.org/downloads/\n  pyenv 사용 시: pyenv install 3.12 && pyenv global 3.12"
+  error "Python 3.10 이상 3.14 미만이 필요합니다. (Pydantic 호환 범위)\n  설치: https://www.python.org/downloads/\n  pyenv 사용 시: pyenv install 3.12 && pyenv global 3.12"
 fi
 success "Python $VER 확인 ($PYTHON)"
 
@@ -91,8 +92,11 @@ else
 fi
 
 # ── account_manager 설치 ──────────────────────────────────────
-info "account_manager를 설치합니다..."
-pipx install git+https://github.com/bomsan69/account_manager.git --force
+info "account_manager를 설치합니다... (Python $VER 사용)"
+# --python 으로 확인된 버전을 명시적으로 지정 (pipx 기본 Python이 3.14일 경우 대비)
+pipx install git+https://github.com/bomsan69/account_manager.git \
+  --python "$PYTHON" \
+  --force
 success "account_manager 설치 완료"
 
 # ── 데이터 디렉토리 초기화 ────────────────────────────────────
