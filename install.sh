@@ -26,21 +26,41 @@ esac
 success "$OS_NAME 확인"
 
 # ── Python 3.11+ 확인 ─────────────────────────────────────────
+# pyenv / asdf 등 버전 관리자 환경을 고려해 버전별 명령어 대신
+# 실제 사용 가능한 python3 / python 명령어의 버전만 확인합니다.
 PYTHON=""
-for cmd in python3.13 python3.12 python3.11 python3; do
-  if command -v "$cmd" &>/dev/null; then
-    VER=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-    MAJOR=$(echo "$VER" | cut -d. -f1)
-    MINOR=$(echo "$VER" | cut -d. -f2)
+VER=""
+for cmd in python3 python; do
+  if command -v "$cmd" &>/dev/null 2>&1; then
+    _VER=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || true)
+    if [[ -z "$_VER" ]]; then continue; fi
+    MAJOR=$(echo "$_VER" | cut -d. -f1)
+    MINOR=$(echo "$_VER" | cut -d. -f2)
     if [[ $MAJOR -ge 3 && $MINOR -ge 11 ]]; then
       PYTHON="$cmd"
+      VER="$_VER"
       break
     fi
   fi
 done
 
+# pyenv가 있으면 전역 버전으로 재시도
+if [[ -z "$PYTHON" ]] && command -v pyenv &>/dev/null; then
+  warn "현재 활성 Python이 3.11 미만입니다. pyenv global 버전을 확인합니다..."
+  PYENV_PYTHON=$(pyenv which python3 2>/dev/null || pyenv which python 2>/dev/null || true)
+  if [[ -n "$PYENV_PYTHON" ]]; then
+    _VER=$("$PYENV_PYTHON" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || true)
+    MAJOR=$(echo "$_VER" | cut -d. -f1)
+    MINOR=$(echo "$_VER" | cut -d. -f2)
+    if [[ $MAJOR -ge 3 && $MINOR -ge 11 ]]; then
+      PYTHON="$PYENV_PYTHON"
+      VER="$_VER"
+    fi
+  fi
+fi
+
 if [[ -z "$PYTHON" ]]; then
-  error "Python 3.11 이상이 필요합니다.\n설치: https://www.python.org/downloads/"
+  error "Python 3.11 이상이 필요합니다.\n  설치: https://www.python.org/downloads/\n  pyenv 사용 시: pyenv install 3.12 && pyenv global 3.12"
 fi
 success "Python $VER 확인 ($PYTHON)"
 
