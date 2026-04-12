@@ -3,7 +3,6 @@ import os
 from typing import Annotated, Literal
 
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
@@ -12,10 +11,23 @@ from typing_extensions import TypedDict
 from .memory import read_memory
 from .tools import ALL_TOOLS
 
+# LLM 프로바이더 설정 (ollama 또는 openai)
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "ollama").lower()
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 # REFLECTION_ENABLED=false 로 설정하면 반성 단계를 건너뜀 (응답 속도 2배 향상)
 REFLECTION_ENABLED = os.environ.get("REFLECTION_ENABLED", "true").lower() != "false"
+
+
+def _build_llm(temperature: float = 0):
+    """LLM_PROVIDER 설정에 따라 LLM 인스턴스 반환"""
+    if LLM_PROVIDER == "openai":
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(model=OPENAI_MODEL, temperature=temperature)
+    else:
+        from langchain_ollama import ChatOllama
+        return ChatOllama(base_url=OLLAMA_BASE_URL, model=OLLAMA_MODEL, temperature=temperature)
 
 SYSTEM_PROMPT = """당신은 사용자의 웹사이트 계정 정보를 관리하는 AI 어시스턴트입니다.
 사용자가 계정 정보를 조회, 저장, 업데이트, 삭제하도록 도와주세요.
@@ -42,11 +54,7 @@ class AgentState(TypedDict):
 
 
 def create_agent():
-    llm = ChatOllama(
-        base_url=OLLAMA_BASE_URL,
-        model=OLLAMA_MODEL,
-        temperature=0,
-    )
+    llm = _build_llm(temperature=0)
     llm_with_tools = llm.bind_tools(ALL_TOOLS)
     tool_node = ToolNode(ALL_TOOLS)
 
@@ -85,7 +93,7 @@ def create_agent():
         reflection_msg = HumanMessage(content=reflection_prompt)
         messages = [system_msg] + state["messages"] + [reflection_msg]
 
-        llm = ChatOllama(base_url=OLLAMA_BASE_URL, model=OLLAMA_MODEL, temperature=0)
+        llm = _build_llm(temperature=0)
         refined = llm.invoke(messages)
 
         # 메타 코멘트 감지: 실제 답변 대신 품질 평가를 반환한 경우 원본 유지
@@ -147,23 +155,24 @@ def chat(message: str, history: list) -> str:
     """메시지를 에이전트에 전달하고 응답 반환"""
     import httpx
 
-    # Ollama 연결 사전 확인
-    try:
-        resp = httpx.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=3)
-        models = [m["name"].split(":")[0] for m in resp.json().get("models", [])]
-        model_base = OLLAMA_MODEL.split(":")[0]
-        if model_base not in models:
-            available = ", ".join(models) if models else "없음"
+    if LLM_PROVIDER == "ollama":
+        # Ollama 연결 사전 확인
+        try:
+            resp = httpx.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=3)
+            models = [m["name"].split(":")[0] for m in resp.json().get("models", [])]
+            model_base = OLLAMA_MODEL.split(":")[0]
+            if model_base not in models:
+                available = ", ".join(models) if models else "없음"
+                raise RuntimeError(
+                    f"모델 '{OLLAMA_MODEL}'이 설치되어 있지 않습니다.\n"
+                    f"  설치된 모델: {available}\n"
+                    f"  설치 명령어: ollama pull {OLLAMA_MODEL}"
+                )
+        except httpx.ConnectError:
             raise RuntimeError(
-                f"모델 '{OLLAMA_MODEL}'이 설치되어 있지 않습니다.\n"
-                f"  설치된 모델: {available}\n"
-                f"  설치 명령어: ollama pull {OLLAMA_MODEL}"
+                f"Ollama 서버에 연결할 수 없습니다. ({OLLAMA_BASE_URL})\n"
+                "  실행 명령어: ollama serve"
             )
-    except httpx.ConnectError:
-        raise RuntimeError(
-            f"Ollama 서버에 연결할 수 없습니다. ({OLLAMA_BASE_URL})\n"
-            "  실행 명령어: ollama serve"
-        )
 
     agent = get_agent()
     lc_history = []
