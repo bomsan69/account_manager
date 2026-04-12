@@ -25,42 +25,49 @@ case "$OS" in
 esac
 success "$OS_NAME 확인"
 
-# ── Python 3.11+ 확인 ─────────────────────────────────────────
-# pyenv / asdf 등 버전 관리자 환경을 고려해 버전별 명령어 대신
-# 실제 사용 가능한 python3 / python 명령어의 버전만 확인합니다.
+# ── Python 3.10+ 확인 ─────────────────────────────────────────
+_check_python_ver() {
+  local cmd="$1"
+  local ver
+  ver=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null) || return 1
+  local major minor
+  major=$(echo "$ver" | cut -d. -f1)
+  minor=$(echo "$ver" | cut -d. -f2)
+  [[ $major -ge 3 && $minor -ge 10 ]] && echo "$ver" && return 0
+  return 1
+}
+
 PYTHON=""
 VER=""
+
+# 1) 현재 PATH의 python3 / python 시도
 for cmd in python3 python; do
   if command -v "$cmd" &>/dev/null 2>&1; then
-    _VER=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || true)
-    if [[ -z "$_VER" ]]; then continue; fi
-    MAJOR=$(echo "$_VER" | cut -d. -f1)
-    MINOR=$(echo "$_VER" | cut -d. -f2)
-    if [[ $MAJOR -ge 3 && $MINOR -ge 11 ]]; then
-      PYTHON="$cmd"
-      VER="$_VER"
-      break
+    if _VER=$(_check_python_ver "$cmd"); then
+      PYTHON="$cmd"; VER="$_VER"; break
     fi
   fi
 done
 
-# pyenv가 있으면 전역 버전으로 재시도
+# 2) pyenv가 있으면 설치된 버전 중 3.10+ 탐색
 if [[ -z "$PYTHON" ]] && command -v pyenv &>/dev/null; then
-  warn "현재 활성 Python이 3.11 미만입니다. pyenv global 버전을 확인합니다..."
-  PYENV_PYTHON=$(pyenv which python3 2>/dev/null || pyenv which python 2>/dev/null || true)
-  if [[ -n "$PYENV_PYTHON" ]]; then
-    _VER=$("$PYENV_PYTHON" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || true)
-    MAJOR=$(echo "$_VER" | cut -d. -f1)
-    MINOR=$(echo "$_VER" | cut -d. -f2)
-    if [[ $MAJOR -ge 3 && $MINOR -ge 11 ]]; then
-      PYTHON="$PYENV_PYTHON"
-      VER="$_VER"
+  warn "현재 활성 Python이 3.10 미만입니다. pyenv 설치 버전을 탐색합니다..."
+  while IFS= read -r pyver; do
+    pyver=$(echo "$pyver" | tr -d ' *')
+    [[ -z "$pyver" ]] && continue
+    candidate=$(pyenv root)/versions/${pyver}/bin/python3
+    [[ -x "$candidate" ]] || candidate=$(pyenv root)/versions/${pyver}/bin/python
+    [[ -x "$candidate" ]] || continue
+    if _VER=$(_check_python_ver "$candidate"); then
+      PYTHON="$candidate"; VER="$_VER"
+      warn "pyenv $pyver 버전을 사용합니다."
+      break
     fi
-  fi
+  done < <(pyenv versions --bare 2>/dev/null | sort -Vr)
 fi
 
 if [[ -z "$PYTHON" ]]; then
-  error "Python 3.11 이상이 필요합니다.\n  설치: https://www.python.org/downloads/\n  pyenv 사용 시: pyenv install 3.12 && pyenv global 3.12"
+  error "Python 3.10 이상이 필요합니다.\n  설치: https://www.python.org/downloads/\n  pyenv 사용 시: pyenv install 3.12 && pyenv global 3.12"
 fi
 success "Python $VER 확인 ($PYTHON)"
 

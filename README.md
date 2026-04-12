@@ -25,7 +25,7 @@ curl -fsSL https://raw.githubusercontent.com/bomsan69/account_manager/master/ins
 
 스크립트가 자동으로 처리하는 항목:
 - OS 확인 (macOS / Linux만 허용)
-- Python 3.11+ 확인
+- Python 3.10+ 확인
 - pipx 미설치 시 자동 설치
 - account_manager 설치 (`~/.local/bin/account-mng`)
 - 데이터 디렉토리 초기화 (`~/.account_manager/`)
@@ -38,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/bomsan69/account_manager/master/ins
 
 **사전 요구사항**
 
-- Python 3.11+
+- Python 3.10+
 - [uv](https://docs.astral.sh/uv/) 패키지 관리자
 
 ```bash
