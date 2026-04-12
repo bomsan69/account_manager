@@ -20,7 +20,10 @@ import yaml
 
 from .security import encrypt, decrypt, is_encrypted
 
-ACCOUNTS_FILE = Path(os.environ.get("ACCOUNTS_FILE", "accounts/accounts.yaml"))
+_DEFAULT_DATA_DIR = Path.home() / ".account_manager"
+ACCOUNTS_FILE = Path(
+    os.environ.get("ACCOUNTS_FILE", str(_DEFAULT_DATA_DIR / "accounts.yaml"))
+).expanduser()
 DEFAULT_CATEGORY = "기타"
 
 # 암호화가 필요한 필드

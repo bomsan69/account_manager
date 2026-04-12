@@ -6,7 +6,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# .env 로드 (프로젝트 루트에서 실행 가정)
+# ~/.account_manager/.env → 현재 디렉토리 .env 순으로 로드 (나중 것이 우선)
+load_dotenv(Path.home() / ".account_manager" / ".env")
 load_dotenv()
 
 from prompt_toolkit import PromptSession

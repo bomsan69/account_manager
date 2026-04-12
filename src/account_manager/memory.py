@@ -3,8 +3,13 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-MEMORY_FILE = Path(os.environ.get("MEMORY_FILE", "memory/MEMORY.md"))
-HISTORY_FILE = Path(os.environ.get("HISTORY_FILE", "memory/HISTORY.md"))
+_DEFAULT_DATA_DIR = Path.home() / ".account_manager"
+MEMORY_FILE = Path(
+    os.environ.get("MEMORY_FILE", str(_DEFAULT_DATA_DIR / "memory" / "MEMORY.md"))
+).expanduser()
+HISTORY_FILE = Path(
+    os.environ.get("HISTORY_FILE", str(_DEFAULT_DATA_DIR / "memory" / "HISTORY.md"))
+).expanduser()
 
 
 def _ensure_files():
