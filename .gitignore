@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+accounts/*.md
+!accounts/example_google.md
+memory/HISTORY.md
+memory/MEMORY.md
+.prompt_history
+*.egg-info/
+dist/
