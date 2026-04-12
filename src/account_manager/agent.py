@@ -143,6 +143,26 @@ def get_agent():
 
 def chat(message: str, history: list) -> str:
     """메시지를 에이전트에 전달하고 응답 반환"""
+    import httpx
+
+    # Ollama 연결 사전 확인
+    try:
+        resp = httpx.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=3)
+        models = [m["name"].split(":")[0] for m in resp.json().get("models", [])]
+        model_base = OLLAMA_MODEL.split(":")[0]
+        if model_base not in models:
+            available = ", ".join(models) if models else "없음"
+            raise RuntimeError(
+                f"모델 '{OLLAMA_MODEL}'이 설치되어 있지 않습니다.\n"
+                f"  설치된 모델: {available}\n"
+                f"  설치 명령어: ollama pull {OLLAMA_MODEL}"
+            )
+    except httpx.ConnectError:
+        raise RuntimeError(
+            f"Ollama 서버에 연결할 수 없습니다. ({OLLAMA_BASE_URL})\n"
+            "  실행 명령어: ollama serve"
+        )
+
     agent = get_agent()
     lc_history = []
     for h in history:

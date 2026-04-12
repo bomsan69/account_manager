@@ -78,7 +78,7 @@ def print_error(message: str):
 
 
 def print_thinking():
-    console.print("[info]생각 중...[/info]", end="\r")
+    console.print("[info]생각 중...[/info]")
 
 
 def print_account_table(accounts: list) -> None:
