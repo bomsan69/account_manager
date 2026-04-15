@@ -1,15 +1,16 @@
 # Account Manager
 
-AI 기반 로컬 계정 정보 관리 챗봇 - Ollama 프라이빗 모델을 사용하여 안전하게 웹사이트 가입 정보를 관리합니다.
+AI 기반 로컬 계정 정보 관리 챗봇 - 자연어로 웹사이트 가입 정보를 안전하게 관리합니다.
 
 > **지원 OS**: macOS, Linux (Windows 미지원)
 
 ## 특징
 
-- **완전 로컬**: 모든 데이터와 AI 처리가 로컬 PC에서만 동작
-- **단일 YAML**: `~/.account_manager/accounts.yaml` 한 파일로 전체 계정 관리
-- **암호화 보안**: Fernet 대칭 암호화로 비밀번호 보호
-- **AI 챗봇**: 자연어로 계정 정보 조회/수정
+- **완전 로컬**: 모든 데이터가 로컬 PC에서만 저장·처리
+- **멀티 LLM**: Ollama(로컬) 또는 vLLM(프라이빗 서버) 선택 가능
+- **다양한 인증 방식**: 비밀번호 / OAuth / API 키 / 패스키 구분 저장
+- **암호화 보안**: Fernet 대칭 암호화로 비밀번호·API 키 보호
+- **AI 챗봇**: 자연어로 계정 정보 조회·저장·수정·삭제
 - **변경 이력**: 모든 계정 변경 사항 자동 기록
 - **장기 기억**: 세션 간 중요 정보 유지
 
@@ -56,8 +57,9 @@ cd account_manager
 # 패키지 설치
 uv sync
 
-# 환경 설정 복사 (필요 시 수정)
+# 환경 설정 복사 후 편집
 cp .env.example .env
+vi .env
 ```
 
 **실행**
@@ -68,39 +70,43 @@ uv run account-mng
 
 ---
 
-## 설치 후 공통 설정
+## LLM 설정
 
-### 1. Ollama 설치 및 모델 준비
+`.env`의 `LLM_PROVIDER`로 AI 백엔드를 선택합니다.
+
+### 옵션 A — Ollama (로컬, 기본값)
+
+모든 AI 처리가 내 PC에서만 동작합니다. 외부로 데이터가 전송되지 않습니다.
 
 ```bash
 # Ollama 설치: https://ollama.ai
-# 모델 다운로드 (최초 1회)
-ollama pull llama3.2
-
-# Ollama 서버 실행 (백그라운드)
-ollama serve
-```
-
-### 2. 설정 파일 편집 (선택)
-
-```bash
-# curl 설치 시
-vi ~/.account_manager/.env
-
-# 클론 설치 시
-vi .env
+ollama pull llama3.2   # 모델 다운로드 (최초 1회)
+ollama serve           # 서버 실행
 ```
 
 ```env
+LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2   # 사용할 Ollama 모델명
+OLLAMA_MODEL=llama3.2
 ```
 
-### 3. 프로그램 실행
+> **참고**: Intel Mac에서는 GPU 가속 없이 CPU로만 추론하여 응답이 40~115초 걸릴 수 있습니다.  
+> Apple Silicon Mac이나 GPU 서버를 사용하면 정상 속도로 동작합니다.
 
-```bash
-account-mng
+---
+
+### 옵션 B — vLLM (프라이빗 AI 서버)
+
+직접 구성한 vLLM 서버에 연결합니다. OpenAI 호환 API를 제공하는 모든 서버와 호환됩니다.
+
+```env
+LLM_PROVIDER=vllm
+VLLM_BASE_URL=https://your-vllm-server.example.com/v1
+VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
+VLLM_API_KEY=your-api-key
 ```
+
+Ollama보다 빠른 응답 속도를 기대할 수 있으며, 데이터는 자신의 서버에서만 처리됩니다.
 
 ---
 
@@ -122,10 +128,24 @@ account-mng
 ```
 > google 계정 정보 보여줘
 > naver 비밀번호 알려줘
-> clickpresso 로그인 정보 저장해줘. 아이디: user1, 비밀번호: pass123
+> notion은 Google로 소셜 로그인 해. user@gmail.com 계정으로 저장해줘
+> openai API 키 저장해줘. sk-xxxx...
 > siteground 비밀번호를 newpass456으로 변경하고 이력 남겨줘
 > 이메일 API 서비스 관련 계정 목록 보여줘
 ```
+
+---
+
+## 인증 방식 (auth_method)
+
+계정 저장 시 AI가 인증 방식을 자동으로 파악하여 구분 저장합니다.
+
+| auth_method | 설명 | 저장 필드 |
+|---|---|---|
+| `password` | 이메일/아이디 + 비밀번호 | 이메일, 비밀번호 (암호화) |
+| `oauth` | 소셜 로그인 (Google, GitHub 등) | oauth_provider, oauth_account |
+| `apikey` | API 키 인증 | api_key (암호화) |
+| `passkey` | 패스키/WebAuthn | 이메일 (비밀번호 없음) |
 
 ---
 
@@ -143,27 +163,39 @@ account-mng
     └── HISTORY.md    # 변경 이력
 ```
 
-`accounts.yaml`을 직접 편집할 수 있습니다:
+`accounts.yaml` 형식 예시:
 
 ```yaml
 이메일:
   gmail:
     site: Gmail
     url: https://gmail.com
+    auth_method: password
     이메일: user@gmail.com
-    비밀번호: gAAAAA...  # 암호화됨 (AI가 자동 처리)
+    비밀번호: gAAAAA...   # Fernet 암호화됨
     메모: 2FA 활성화
-    updated: '2026-04-11'
+    updated: '2026-04-14'
 
-호스팅:
-  siteground:
-    site: SiteGround
-    url: https://siteground.com
-    이메일: admin@mysite.com
-    비밀번호: gAAAAA...
+SNS:
+  notion:
+    site: Notion
+    url: https://notion.so
+    auth_method: oauth
+    oauth_provider: Google
+    oauth_account: user@gmail.com
+    updated: '2026-04-14'
+
+API:
+  openai:
+    site: OpenAI
+    url: https://platform.openai.com
+    auth_method: apikey
+    이메일: user@gmail.com
+    api_key: gAAAAA...    # Fernet 암호화됨
+    updated: '2026-04-14'
 ```
 
-> **주의**: 비밀번호를 직접 평문으로 입력하면 다음번 AI 업데이트 시 자동 암호화됩니다.
+> **주의**: 비밀번호·API 키를 직접 평문으로 입력하면 다음 AI 업데이트 시 자동 암호화됩니다.
 
 ---
 
@@ -172,6 +204,7 @@ account-mng
 - **암호화**: Fernet 대칭 암호화 (AES-128-CBC)
 - **키 파일**: `~/.account_manager/.key` (권한 600)
 - **git 제외**: `accounts.yaml`, `memory/`, `.env` 등 민감 파일은 `.gitignore`로 보호
+- **외부 전송 없음**: Ollama 및 프라이빗 vLLM 서버 사용 시 데이터가 외부로 나가지 않음
 
 ### 암호화 키 백업
 

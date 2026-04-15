@@ -12,10 +12,39 @@ from typing_extensions import TypedDict
 from .memory import read_memory
 from .tools import ALL_TOOLS
 
+# Ollama 설정
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
+
+# vLLM (OpenAI-compatible) 설정
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "ollama")  # ollama | vllm
+VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "https://openai.aifreechatbot.com/v1")
+VLLM_MODEL = os.environ.get("VLLM_MODEL", "")
+VLLM_API_KEY = os.environ.get("VLLM_API_KEY", "EMPTY")
+
 # REFLECTION_ENABLED=false 로 설정하면 반성 단계를 건너뜀 (응답 속도 2배 향상)
 REFLECTION_ENABLED = os.environ.get("REFLECTION_ENABLED", "true").lower() != "false"
+
+
+def _create_llm(with_tools: bool = False):
+    """LLM_PROVIDER 환경변수에 따라 LLM 인스턴스 반환"""
+    if LLM_PROVIDER == "vllm":
+        from langchain_openai import ChatOpenAI
+        llm = ChatOpenAI(
+            base_url=VLLM_BASE_URL,
+            model=VLLM_MODEL,
+            api_key=VLLM_API_KEY,
+            temperature=0,
+        )
+    else:
+        llm = ChatOllama(
+            base_url=OLLAMA_BASE_URL,
+            model=OLLAMA_MODEL,
+            temperature=0,
+        )
+    if with_tools:
+        return llm.bind_tools(ALL_TOOLS)
+    return llm
 
 SYSTEM_PROMPT = """당신은 사용자의 웹사이트 계정 정보를 관리하는 AI 어시스턴트입니다.
 사용자가 계정 정보를 조회, 저장, 업데이트, 삭제하도록 도와주세요.
@@ -46,12 +75,7 @@ class AgentState(TypedDict):
 
 
 def create_agent():
-    llm = ChatOllama(
-        base_url=OLLAMA_BASE_URL,
-        model=OLLAMA_MODEL,
-        temperature=0,
-    )
-    llm_with_tools = llm.bind_tools(ALL_TOOLS)
+    llm_with_tools = _create_llm(with_tools=True)
     tool_node = ToolNode(ALL_TOOLS)
 
     def agent_node(state: AgentState) -> AgentState:
@@ -89,8 +113,7 @@ def create_agent():
         reflection_msg = HumanMessage(content=reflection_prompt)
         messages = [system_msg] + state["messages"] + [reflection_msg]
 
-        llm = ChatOllama(base_url=OLLAMA_BASE_URL, model=OLLAMA_MODEL, temperature=0)
-        refined = llm.invoke(messages)
+        refined = _create_llm().invoke(messages)
 
         # 메타 코멘트 감지: 실제 답변 대신 품질 평가를 반환한 경우 원본 유지
         meta_keywords = ["유지합니다", "정확합니다", "완전합니다", "충분합니다", "검토 결과", "답변이 적절"]
@@ -151,23 +174,47 @@ def chat(message: str, history: list) -> str:
     """메시지를 에이전트에 전달하고 응답 반환"""
     import httpx
 
-    # Ollama 연결 사전 확인
-    try:
-        resp = httpx.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=3)
-        models = [m["name"].split(":")[0] for m in resp.json().get("models", [])]
-        model_base = OLLAMA_MODEL.split(":")[0]
-        if model_base not in models:
-            available = ", ".join(models) if models else "없음"
+    if LLM_PROVIDER == "vllm":
+        # vLLM 서버 연결 확인
+        try:
+            headers = {"Authorization": f"Bearer {VLLM_API_KEY}"}
+            resp = httpx.get(f"{VLLM_BASE_URL}/models", headers=headers, timeout=5)
+            if resp.status_code == 401:
+                raise RuntimeError(
+                    f"vLLM 서버 인증 실패 ({VLLM_BASE_URL})\n"
+                    "  .env의 VLLM_API_KEY를 확인하세요."
+                )
+            if not VLLM_MODEL:
+                # 모델 이름 미설정 시 첫 번째 모델 자동 선택
+                models = resp.json().get("data", [])
+                if models:
+                    raise RuntimeError(
+                        f"VLLM_MODEL이 설정되지 않았습니다.\n"
+                        f"  사용 가능한 모델: {', '.join(m['id'] for m in models)}\n"
+                        f"  .env에 VLLM_MODEL=<모델명>을 추가하세요."
+                    )
+        except httpx.ConnectError:
             raise RuntimeError(
-                f"모델 '{OLLAMA_MODEL}'이 설치되어 있지 않습니다.\n"
-                f"  설치된 모델: {available}\n"
-                f"  설치 명령어: ollama pull {OLLAMA_MODEL}"
+                f"vLLM 서버에 연결할 수 없습니다. ({VLLM_BASE_URL})"
             )
-    except httpx.ConnectError:
-        raise RuntimeError(
-            f"Ollama 서버에 연결할 수 없습니다. ({OLLAMA_BASE_URL})\n"
-            "  실행 명령어: ollama serve"
-        )
+    else:
+        # Ollama 연결 사전 확인
+        try:
+            resp = httpx.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=3)
+            models = [m["name"].split(":")[0] for m in resp.json().get("models", [])]
+            model_base = OLLAMA_MODEL.split(":")[0]
+            if model_base not in models:
+                available = ", ".join(models) if models else "없음"
+                raise RuntimeError(
+                    f"모델 '{OLLAMA_MODEL}'이 설치되어 있지 않습니다.\n"
+                    f"  설치된 모델: {available}\n"
+                    f"  설치 명령어: ollama pull {OLLAMA_MODEL}"
+                )
+        except httpx.ConnectError:
+            raise RuntimeError(
+                f"Ollama 서버에 연결할 수 없습니다. ({OLLAMA_BASE_URL})\n"
+                "  실행 명령어: ollama serve"
+            )
 
     agent = get_agent()
     lc_history = []
