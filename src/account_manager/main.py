@@ -74,12 +74,46 @@ def handle_slash_command(command: str) -> bool:
         fields = {}
         fields["url"] = console.input("[cyan]URL (선택): [/cyan]").strip()
         fields["category"] = console.input("[cyan]카테고리 (예: 이메일, SNS): [/cyan]").strip()
-        email = console.input("[cyan]이메일/아이디: [/cyan]").strip()
-        if email:
-            fields["이메일"] = email
-        password = getpass.getpass("비밀번호 (입력 내용 숨김): ").strip()
-        if password:
-            fields["비밀번호"] = password
+
+        # 인증 방식 선택
+        console.print("[cyan]인증 방식을 선택하세요:[/cyan]")
+        console.print("  [bold]1[/bold]. password  - 이메일/아이디 + 비밀번호")
+        console.print("  [bold]2[/bold]. oauth     - 소셜 로그인 (Google, GitHub 등)")
+        console.print("  [bold]3[/bold]. apikey    - API 키")
+        console.print("  [bold]4[/bold]. passkey   - 패스키 (비밀번호 없음)")
+        auth_choice = console.input("[cyan]선택 (1~4, 기본값 1): [/cyan]").strip()
+        auth_map = {"1": "password", "2": "oauth", "3": "apikey", "4": "passkey",
+                    "password": "password", "oauth": "oauth", "apikey": "apikey", "passkey": "passkey"}
+        auth_method = auth_map.get(auth_choice, "password")
+        fields["auth_method"] = auth_method
+
+        if auth_method == "password":
+            email = console.input("[cyan]이메일/아이디: [/cyan]").strip()
+            if email:
+                fields["이메일"] = email
+            password = getpass.getpass("비밀번호 (입력 내용 숨김): ").strip()
+            if password:
+                fields["비밀번호"] = password
+        elif auth_method == "oauth":
+            console.print("[dim]OAuth 제공자 예: Google, GitHub, Apple, Kakao, Naver[/dim]")
+            provider = console.input("[cyan]OAuth 제공자: [/cyan]").strip()
+            if provider:
+                fields["oauth_provider"] = provider
+            oauth_account = console.input("[cyan]OAuth 계정 이메일: [/cyan]").strip()
+            if oauth_account:
+                fields["oauth_account"] = oauth_account
+        elif auth_method == "apikey":
+            email = console.input("[cyan]이메일/아이디 (선택): [/cyan]").strip()
+            if email:
+                fields["이메일"] = email
+            api_key = getpass.getpass("API 키 (입력 내용 숨김): ").strip()
+            if api_key:
+                fields["api_key"] = api_key
+        elif auth_method == "passkey":
+            email = console.input("[cyan]이메일/아이디: [/cyan]").strip()
+            if email:
+                fields["이메일"] = email
+
         memo = console.input("[cyan]메모 (선택): [/cyan]").strip()
         # 빈 값 제거
         fields = {k: v for k, v in fields.items() if v}
