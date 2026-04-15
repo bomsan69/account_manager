@@ -1,3 +1,11 @@
+## 2026-04-15
+
+### /new 명령어 auth_method 선택 흐름 추가
+- `src/account_manager/main.py` — /new 등록 시 password/oauth/apikey/passkey 방식 선택 메뉴 추가 및 방식별 입력 필드 분기 처리
+
+### commit-push-pr 스킬 수정 (job-log 자동 실행)
+- `~/.claude/plugins/…/commit-push-pr.md` (3개 파일) — 커밋 전 job-log 스킬을 먼저 실행하도록 순서 변경, `Skill` allowed-tools 추가
+
 ## 2026-04-14
 
 ### vLLM (Private AI 서버) 지원 추가
