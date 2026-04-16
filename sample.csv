@@ -1,0 +1,9 @@
+site,url,category,auth_method,email,username,password,oauth_provider,oauth_account,api_key,memo
+Gmail,https://gmail.com,이메일,password,user@gmail.com,,MyP@ssw0rd!,,,, 2FA 활성화
+GitHub,https://github.com,개발,password,user@gmail.com,,gh_password123,,,, SSH 키 사용 권장
+Notion,https://notion.so,업무,oauth,,,, Google,user@gmail.com,,
+Slack,https://slack.com,업무,oauth,,,,Google,user@gmail.com,,회사 워크스페이스
+OpenAI,https://platform.openai.com,API,apikey,user@gmail.com,,,,,sk-proj-xxxxxxxxxxxx,GPT-4 API 키
+AWS,https://aws.amazon.com,클라우드,apikey,user@gmail.com,,,,,AKIAIOSFODNN7EXAMPLE, IAM 사용자 키
+iCloud,https://icloud.com,이메일,passkey,user@icloud.com,,,,,,Face ID 등록
+Naver,https://naver.com,SNS,password,,naveruser,naver_pw123,,,,네이버 아이디로 로그인

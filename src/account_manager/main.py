@@ -1,5 +1,7 @@
 """account_manager - 메인 진입점"""
+import csv
 import getpass
+import io
 import os
 import sys
 from pathlib import Path
@@ -139,6 +141,102 @@ def handle_slash_command(command: str) -> bool:
     elif cmd == "/clear":
         console.clear()
         print_banner()
+        return True
+
+    elif cmd == "/batch":
+        csv_path = Path(arg).expanduser() if arg else None
+        if not csv_path:
+            print_error("사용법: /batch <CSV파일경로>  (예: /batch ~/sample.csv)")
+            return True
+        if not csv_path.exists():
+            print_error(f"파일을 찾을 수 없습니다: {csv_path}")
+            return True
+
+        # CSV 컬럼 정의 (대소문자 무시)
+        # site, url, category, auth_method, email, username, password,
+        # oauth_provider, oauth_account, api_key, memo
+        ok_count = 0
+        skip_count = 0
+        errors: list[str] = []
+
+        try:
+            with csv_path.open(encoding="utf-8-sig", newline="") as f:
+                reader = csv.DictReader(f)
+                rows = list(reader)
+        except Exception as e:
+            print_error(f"CSV 파일 읽기 실패: {e}")
+            return True
+
+        if not rows:
+            print_error("CSV 파일에 데이터 행이 없습니다.")
+            return True
+
+        # 헤더 정규화 (공백·대소문자 제거)
+        def norm(s: str) -> str:
+            return s.strip().lower().replace(" ", "_")
+
+        console.print(f"[cyan]총 {len(rows)}개 항목을 일괄 등록합니다...[/cyan]")
+
+        for i, raw_row in enumerate(rows, start=2):
+            row = {norm(k): (v.strip() if v else "") for k, v in raw_row.items()}
+
+            site = row.get("site", "")
+            if not site:
+                errors.append(f"행 {i}: site 값이 없습니다. 건너뜁니다.")
+                skip_count += 1
+                continue
+
+            auth_method = row.get("auth_method", "password").lower()
+            valid_methods = {"password", "oauth", "apikey", "passkey"}
+            if auth_method not in valid_methods:
+                errors.append(f"행 {i} ({site}): 알 수 없는 auth_method '{auth_method}'. 건너뜁니다.")
+                skip_count += 1
+                continue
+
+            fields: dict = {
+                "auth_method": auth_method,
+                "category": row.get("category", "") or "기타",
+            }
+            if row.get("url"):
+                fields["url"] = row["url"]
+
+            if auth_method == "password":
+                if row.get("email"):
+                    fields["이메일"] = row["email"]
+                if row.get("username"):
+                    fields["아이디"] = row["username"]
+                if row.get("password"):
+                    fields["비밀번호"] = row["password"]
+            elif auth_method == "oauth":
+                if row.get("oauth_provider"):
+                    fields["oauth_provider"] = row["oauth_provider"]
+                if row.get("oauth_account"):
+                    fields["oauth_account"] = row["oauth_account"]
+            elif auth_method == "apikey":
+                if row.get("email"):
+                    fields["이메일"] = row["email"]
+                if row.get("api_key"):
+                    fields["api_key"] = row["api_key"]
+            elif auth_method == "passkey":
+                if row.get("email"):
+                    fields["이메일"] = row["email"]
+
+            memo = row.get("memo", "")
+
+            try:
+                acc = save_account(site=site, fields=fields, body=memo)
+                console.print(f"  [green]✓[/green] {site} [{acc.category}] ({auth_method})")
+                ok_count += 1
+            except Exception as e:
+                errors.append(f"행 {i} ({site}): 저장 실패 — {e}")
+                skip_count += 1
+
+        # 결과 요약
+        console.print(f"\n[bold]일괄 등록 완료:[/bold] 성공 [green]{ok_count}[/green]건 / 실패 [red]{skip_count}[/red]건")
+        if errors:
+            console.print("[yellow]오류 내역:[/yellow]")
+            for err in errors:
+                console.print(f"  [red]✗[/red] {err}")
         return True
 
     elif cmd in ("/exit", "/quit", "/q"):

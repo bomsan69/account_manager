@@ -33,6 +33,7 @@ HELP_TEXT = """
 | `/list` | 저장된 계정 목록 |
 | `/new <site>` | 새 계정 추가 (대화형) |
 | `/show <site>` | 계정 정보 조회 |
+| `/batch <파일.csv>` | CSV 파일로 계정 일괄 등록 |
 | `/history [site]` | 변경 이력 조회 |
 | `/memory` | 저장된 기억 조회 |
 | `/clear` | 화면 지우기 |

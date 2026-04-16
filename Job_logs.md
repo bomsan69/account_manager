@@ -1,3 +1,11 @@
+## 2026-04-16
+
+### /batch 명령어 — CSV 일괄 등록 기능 추가
+- `src/account_manager/main.py` — `/batch <파일.csv>` 슬래시 명령어 추가; CSV를 읽어 password/oauth/apikey/passkey 방식별로 필드 매핑 후 일괄 저장, 성공·실패 건수 요약 출력
+- `src/account_manager/ui.py` — HELP_TEXT 테이블에 `/batch` 항목 추가
+- `sample.csv` — 4가지 인증 방식을 포함한 8개 예시 계정 CSV 샘플 파일 생성
+- `README.md` — `/batch` 명령어 설명 및 CSV 형식 컬럼 가이드 섹션 추가, 특징 목록에 "일괄 등록" 항목 추가
+
 ## 2026-04-15
 
 ### /new 명령어 auth_method 선택 흐름 추가
