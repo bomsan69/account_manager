@@ -144,19 +144,8 @@ OpenAI,https://platform.openai.com,API,apikey,user@gmail.com,,,,,sk-proj-xxx,GPT
 iCloud,https://icloud.com,이메일,passkey,user@icloud.com,,,,,,Face ID 등록
 ```
 
-| 컬럼 | 설명 | 필수 |
-|------|------|------|
-| `site` | 사이트명 | ✅ |
-| `url` | 사이트 URL | |
-| `category` | 카테고리 (기본값: 기타) | |
-| `auth_method` | `password` / `oauth` / `apikey` / `passkey` | |
-| `email` | 이메일 (password·apikey·passkey 방식) | |
-| `username` | 아이디 (password 방식, 이메일 대신 사용) | |
-| `password` | 비밀번호 (자동 암호화, password 방식) | |
-| `oauth_provider` | OAuth 제공자 (예: Google, GitHub) | |
-| `oauth_account` | OAuth 계정 이메일 | |
-| `api_key` | API 키 (자동 암호화, apikey 방식) | |
-| `memo` | 메모 | |
+
+
 
 > 비밀번호·API 키는 CSV에 평문으로 적어도 저장 시 자동으로 Fernet 암호화됩니다.
 

@@ -188,20 +188,37 @@ def save_account(
     body: str = "",
     encrypt_sensitive: bool = True,
     category: str = "",
+    key: str = "",
 ) -> Account:
     """계정 저장 (신규 또는 업데이트). 비밀번호 자동 암호화."""
     data = _load_yaml()
 
-    # 기존 계정이면 카테고리 유지
-    existing = load_account(site)
-    if existing:
-        cat = category or existing.category
-        key = existing.key
-        merged = dict(existing.fields)
+    if key:
+        # 명시적 key가 주어진 경우: 해당 key로 직접 조회 (같은 사이트 다계정 지원)
+        existing_cat = None
+        existing_fields = None
+        for cat_name, entries in data.items():
+            if isinstance(entries, dict) and key in entries:
+                existing_cat = cat_name
+                existing_fields = entries[key]
+                break
+        if existing_cat:
+            cat = category or existing_cat
+            merged = dict(existing_fields)
+        else:
+            cat = category or fields.pop("category", DEFAULT_CATEGORY)
+            merged = {"site": site}
     else:
-        cat = category or fields.pop("category", DEFAULT_CATEGORY)
-        key = _site_key(site)
-        merged = {"site": site}
+        # 기존 동작: 사이트명으로 조회
+        existing = load_account(site)
+        if existing:
+            cat = category or existing.category
+            key = existing.key
+            merged = dict(existing.fields)
+        else:
+            cat = category or fields.pop("category", DEFAULT_CATEGORY)
+            key = _site_key(site)
+            merged = {"site": site}
 
     # 카테고리 섹션 없으면 생성
     if cat not in data:

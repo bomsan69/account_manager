@@ -223,9 +223,17 @@ def handle_slash_command(command: str) -> bool:
 
             memo = row.get("memo", "")
 
+            # 같은 사이트에 여러 계정이 있을 경우 email/username으로 고유 키 생성
+            identifier = row.get("email", "") or row.get("username", "")
+            if identifier:
+                raw = f"{site}_{identifier}".lower()
+                unique_key = "".join(c if c.isalnum() or c == "_" else "_" for c in raw)
+            else:
+                unique_key = site.lower().replace(" ", "_").replace("/", "_")
+
             try:
-                acc = save_account(site=site, fields=fields, body=memo)
-                console.print(f"  [green]✓[/green] {site} [{acc.category}] ({auth_method})")
+                acc = save_account(site=site, fields=fields, body=memo, key=unique_key)
+                console.print(f"  [green]✓[/green] {site} [{acc.category}] ({auth_method}) - {identifier or unique_key}")
                 ok_count += 1
             except Exception as e:
                 errors.append(f"행 {i} ({site}): 저장 실패 — {e}")
