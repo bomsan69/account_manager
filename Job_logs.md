@@ -1,3 +1,10 @@
+## 2026-04-17
+
+### /batch 다중 계정 중복 저장 버그 수정
+- `src/account_manager/storage.py` — `save_account()`에 `key` 파라미터 추가; 명시적 키로 조회·저장해 동일 사이트명 중복 덮어쓰기 방지
+- `src/account_manager/main.py` — `/batch` 루프에서 `site+email/username` 조합으로 고유 키 생성, 성공 출력에 식별자 표시
+- `README.md` — CSV 컬럼 설명 테이블 정리
+
 ## 2026-04-16
 
 ### /batch 명령어 — CSV 일괄 등록 기능 추가
