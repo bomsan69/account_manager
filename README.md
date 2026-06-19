@@ -4,9 +4,17 @@ AI 기반 로컬 계정 정보 관리 챗봇 - 자연어로 웹사이트 가입 
 
 > **지원 OS**: macOS, Linux (Windows 미지원)
 
+## Project Info
+
+| 항목 | 값 |
+|---|---|
+| **Path** | `/Users/jeahyungchung/Project/claude_code/account_manager` |
+| **Repository** | `https://github.com/bomsan69/account_manager` |
+
 ## 특징
 
 - **완전 로컬**: 모든 데이터가 로컬 PC에서만 저장·처리
+- **실행 비밀번호 보호**: 앱 실행 시 마스터 비밀번호 인증 (PBKDF2-SHA256)
 - **멀티 LLM**: Ollama(로컬) 또는 vLLM(프라이빗 서버) 선택 가능
 - **다양한 인증 방식**: 비밀번호 / OAuth / API 키 / 패스키 구분 저장
 - **암호화 보안**: Fernet 대칭 암호화로 비밀번호·API 키 보호
@@ -29,7 +37,7 @@ curl -fsSL https://raw.githubusercontent.com/bomsan69/account_manager/master/ins
 - OS 확인 (macOS / Linux만 허용)
 - Python 3.10+ 확인
 - pipx 미설치 시 자동 설치
-- account_manager 설치 (`~/.local/bin/account-mng`)
+- account_manager 설치 (`~/.local/bin/accounts`)
 - 데이터 디렉토리 초기화 (`~/.account_manager/`)
 
 ---
@@ -66,8 +74,21 @@ vi .env
 **실행**
 
 ```bash
-uv run account-mng
+uv run accounts
 ```
+
+---
+
+## 실행 비밀번호 인증
+
+앱 시작 시 마스터 비밀번호를 입력해야 합니다. 3회 틀리면 자동 종료됩니다.
+
+```
+비밀번호 (1/3):
+```
+
+- 비밀번호는 PBKDF2-SHA256(200,000 iterations)으로 해시하여 코드에 저장
+- 평문 비밀번호는 코드 어디에도 존재하지 않음
 
 ---
 
@@ -117,6 +138,7 @@ Ollama보다 빠른 응답 속도를 기대할 수 있으며, 데이터는 자�
 |--------|------|
 | `/help` | 사용법 표시 |
 | `/list` | 저장된 계정 목록 |
+| `/categories` | 카테고리 목록 및 계정 수 |
 | `/new [사이트명]` | 새 계정 추가 (대화형) |
 | `/show <사이트명>` | 계정 정보 조회 |
 | `/batch <파일.csv>` | CSV 파일로 계정 일괄 등록 |
@@ -143,9 +165,6 @@ Notion,https://notion.so,업무,oauth,,,,Google,user@gmail.com,,
 OpenAI,https://platform.openai.com,API,apikey,user@gmail.com,,,,,sk-proj-xxx,GPT-4 API 키
 iCloud,https://icloud.com,이메일,passkey,user@icloud.com,,,,,,Face ID 등록
 ```
-
-
-
 
 > 비밀번호·API 키는 CSV에 평문으로 적어도 저장 시 자동으로 Fernet 암호화됩니다.
 
@@ -229,6 +248,7 @@ API:
 
 ## 보안
 
+- **실행 인증**: 앱 시작 시 마스터 비밀번호 요구 (PBKDF2-SHA256, 200,000 iterations)
 - **암호화**: Fernet 대칭 암호화 (AES-128-CBC)
 - **키 파일**: `~/.account_manager/.key` (권한 600)
 - **git 제외**: `accounts.yaml`, `memory/`, `.env` 등 민감 파일은 `.gitignore`로 보호

@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.scripts]
-account-mng = "account_manager.main:main"
+accounts = "account_manager.main:main"
 
 [build-system]
 requires = ["hatchling"]

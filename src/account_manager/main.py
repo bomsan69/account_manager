@@ -1,10 +1,30 @@
 """account_manager - 메인 진입점"""
 import csv
 import getpass
+import hashlib
 import io
 import os
 import sys
 from pathlib import Path
+
+_AUTH_SALT = b"acct_mgr_v1_2024"
+_AUTH_HASH = "598fb0c4be8b4bf3ff3559a7450af0c067394d7306d446848c7f8621a30d09f7"
+_MAX_ATTEMPTS = 3
+
+
+def _verify_password(pw: str) -> bool:
+    h = hashlib.pbkdf2_hmac("sha256", pw.encode(), _AUTH_SALT, 200_000)
+    return h.hex() == _AUTH_HASH
+
+
+def _authenticate() -> bool:
+    for attempt in range(1, _MAX_ATTEMPTS + 1):
+        pw = getpass.getpass(f"비밀번호 ({attempt}/{_MAX_ATTEMPTS}): ")
+        if _verify_password(pw):
+            return True
+        if attempt < _MAX_ATTEMPTS:
+            print("비밀번호가 틀렸습니다. 다시 시도하세요.")
+    return False
 
 from dotenv import load_dotenv
 
@@ -29,7 +49,7 @@ from .ui import (
     print_account_table,
     confirm,
 )
-from .storage import list_accounts, load_account, save_account
+from .storage import list_accounts, list_categories, load_account, save_account
 from .memory import read_memory, read_history
 
 # prompt_toolkit 스타일
@@ -54,6 +74,17 @@ def handle_slash_command(command: str) -> bool:
     elif cmd == "/list":
         accounts = list_accounts()
         print_account_table(accounts)
+        return True
+
+    elif cmd == "/categories":
+        cats = list_categories()
+        if not cats:
+            print_system("저장된 카테고리가 없습니다.")
+        else:
+            console.print("\n[bold cyan]카테고리 목록[/bold cyan]")
+            for i, cat in enumerate(cats, start=1):
+                count = len(list_accounts(category=cat))
+                console.print(f"  {i}. [green]{cat}[/green]  ({count}개)")
         return True
 
     elif cmd == "/show":
@@ -255,6 +286,10 @@ def handle_slash_command(command: str) -> bool:
 
 
 def main():
+    if not _authenticate():
+        print("인증 실패. 프로그램을 종료합니다.")
+        sys.exit(1)
+
     print_banner()
 
     # prompt_toolkit 세션 설정 - 이력 파일을 홈 디렉토리에 저장 (프로젝트 폴더 노출 방지)

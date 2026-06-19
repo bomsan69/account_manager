@@ -1,3 +1,18 @@
+## 2026-06-19
+
+### /categories 슬래시 명령어 추가
+- `src/account_manager/main.py` — `/categories` 핸들러 추가; 카테고리명과 계정 수를 목록으로 출력
+- `src/account_manager/ui.py` — HELP_TEXT 테이블에 `/categories` 항목 추가
+
+### 실행 명령어 변경 (account-mng → accounts)
+- `pyproject.toml` — `[project.scripts]` 키 `account-mng` → `accounts`로 변경
+
+### 앱 실행 시 마스터 비밀번호 인증 추가
+- `src/account_manager/main.py` — `_AUTH_HASH`, `_AUTH_SALT` 상수 정의 (PBKDF2-SHA256, 200,000 iterations); `_verify_password()`, `_authenticate()` 함수 추가; `main()` 진입 시 3회 인증 실패 시 종료 처리
+
+### README 업데이트
+- `README.md` — Project Info 블록 추가, 실행 명령어 `accounts`로 수정, `/categories` 명령어 및 실행 비밀번호 인증 섹션 추가
+
 ## 2026-04-17
 
 ### /batch 다중 계정 중복 저장 버그 수정
