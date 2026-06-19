@@ -13,6 +13,9 @@
 ### README 업데이트
 - `README.md` — Project Info 블록 추가, 실행 명령어 `accounts`로 수정, `/categories` 명령어 및 실행 비밀번호 인증 섹션 추가
 
+### Python 버전 상한 확장
+- `pyproject.toml` — `requires-python` 상한 `<3.14` → `<3.15`로 변경 (Python 3.14 호환성 확보)
+
 ### install.sh 실행 명령어 수정
 - `install.sh` — 완료 메시지의 실행 명령어 `account-mng` → `accounts`로 수정
 
