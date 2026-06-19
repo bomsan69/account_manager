@@ -30,7 +30,7 @@ AI 기반 로컬 계정 정보 관리 챗봇 - 자연어로 웹사이트 가입 
 ### 방법 1 — curl로 한 번에 설치 (권장)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bomsan69/account_manager/master/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/bomsan69/account_manager/master/install.sh | bash
 ```
 
 스크립트가 자동으로 처리하는 항목:
@@ -76,6 +76,50 @@ vi .env
 ```bash
 uv run accounts
 ```
+
+---
+
+## 코드 수정 후 로컬 재설치
+
+로컬에서 코드를 변경한 뒤 `accounts` 명령어에 반영하는 방법입니다.
+
+### uv로 개발 중 실행 (코드 변경 즉시 반영)
+
+저장소 클론 후 개발하는 경우, 매번 재설치 없이 바로 실행할 수 있습니다.
+
+```bash
+uv run accounts
+```
+
+`src/` 코드를 수정하면 다음 실행 시 자동으로 반영됩니다.
+
+---
+
+### pipx로 전역 명령어 재설치
+
+`accounts` 명령어를 전역에서 사용하려면 수정 후 pipx로 재설치합니다.
+
+**방법 1 — GitHub에 푸시한 경우 (원격 소스 기준)**
+
+```bash
+pipx install git+https://github.com/bomsan69/account_manager.git --force
+```
+
+**방법 2 — 로컬 저장소 기준 (푸시 전에도 반영 가능)**
+
+```bash
+# 저장소 폴더 안에서 실행
+pipx install . --force
+```
+
+설치 완료 후 `accounts` 명령어에 변경 내용이 반영됩니다.
+
+---
+
+### 데이터 이전 불필요
+
+재설치해도 `~/.account_manager/` 폴더(계정 데이터, 암호화 키, 설정)는 건드리지 않습니다.
+기존 데이터를 그대로 유지한 채로 업데이트됩니다.
 
 ---
 
