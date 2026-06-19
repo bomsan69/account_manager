@@ -13,6 +13,9 @@
 ### README 업데이트
 - `README.md` — Project Info 블록 추가, 실행 명령어 `accounts`로 수정, `/categories` 명령어 및 실행 비밀번호 인증 섹션 추가
 
+### install.sh 실행 명령어 수정
+- `install.sh` — 완료 메시지의 실행 명령어 `account-mng` → `accounts`로 수정
+
 ## 2026-04-17
 
 ### /batch 다중 계정 중복 저장 버그 수정
