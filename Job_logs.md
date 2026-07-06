@@ -1,3 +1,9 @@
+## 2026-07-06
+
+### /edit 슬래시 명령어 추가 — 등록된 계정 정보 수정
+- `src/account_manager/main.py` — `/edit <site>` 핸들러 추가; 기존 계정을 조회해 URL과 인증방식별 필드(이메일/비밀번호, OAuth 제공자/계정, API키), 메모를 현재 값과 함께 보여주고 Enter 입력 시 기존 값 유지, 새 값 입력 시 변경
+- `src/account_manager/ui.py` — HELP_TEXT 테이블에 `/edit <site>` 항목 추가
+
 ## 2026-06-19
 
 ### /categories 슬래시 명령어 추가
