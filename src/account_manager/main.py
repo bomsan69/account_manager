@@ -154,6 +154,68 @@ def handle_slash_command(command: str) -> bool:
         print_system(f"'{site}' 계정이 [{acc.category}] 카테고리에 저장되었습니다.")
         return True
 
+    elif cmd == "/edit":
+        if not arg:
+            print_error("사용법: /edit <사이트명>")
+            return True
+        account = load_account(arg)
+        if not account:
+            print_error(f"'{arg}' 계정을 찾을 수 없습니다.")
+            return True
+
+        site = account.site
+        auth_method = account.fields.get("auth_method", "password")
+        console.print(f"[cyan]'{site}' 계정 수정 (Enter를 누르면 기존 값을 유지합니다)[/cyan]")
+
+        fields = {}
+
+        cur_url = account.fields.get("url", "")
+        new_url = console.input(f"[cyan]URL (현재: {cur_url or '없음'}): [/cyan]").strip()
+        if new_url:
+            fields["url"] = new_url
+
+        if auth_method == "password":
+            cur_email = account.fields.get("이메일", "")
+            new_email = console.input(f"[cyan]이메일/아이디 (현재: {cur_email or '없음'}): [/cyan]").strip()
+            if new_email:
+                fields["이메일"] = new_email
+            new_password = getpass.getpass("비밀번호 (변경하려면 입력, 유지하려면 Enter): ").strip()
+            if new_password:
+                fields["비밀번호"] = new_password
+        elif auth_method == "oauth":
+            cur_provider = account.fields.get("oauth_provider", "")
+            new_provider = console.input(f"[cyan]OAuth 제공자 (현재: {cur_provider or '없음'}): [/cyan]").strip()
+            if new_provider:
+                fields["oauth_provider"] = new_provider
+            cur_oauth_account = account.fields.get("oauth_account", "")
+            new_oauth_account = console.input(f"[cyan]OAuth 계정 이메일 (현재: {cur_oauth_account or '없음'}): [/cyan]").strip()
+            if new_oauth_account:
+                fields["oauth_account"] = new_oauth_account
+        elif auth_method == "apikey":
+            cur_email = account.fields.get("이메일", "")
+            new_email = console.input(f"[cyan]이메일/아이디 (현재: {cur_email or '없음'}): [/cyan]").strip()
+            if new_email:
+                fields["이메일"] = new_email
+            new_api_key = getpass.getpass("API 키 (변경하려면 입력, 유지하려면 Enter): ").strip()
+            if new_api_key:
+                fields["api_key"] = new_api_key
+        elif auth_method == "passkey":
+            cur_email = account.fields.get("이메일", "")
+            new_email = console.input(f"[cyan]이메일/아이디 (현재: {cur_email or '없음'}): [/cyan]").strip()
+            if new_email:
+                fields["이메일"] = new_email
+
+        cur_memo = account.fields.get("메모", "")
+        new_memo = console.input(f"[cyan]메모 (현재: {cur_memo or '없음'}): [/cyan]").strip()
+
+        if not fields and not new_memo:
+            print_system("변경된 내용이 없습니다.")
+            return True
+
+        save_account(site=site, fields=fields, body=new_memo, key=account.key)
+        print_system(f"'{site}' 계정이 수정되었습니다.")
+        return True
+
     elif cmd == "/history":
         from .memory import read_history
         history = read_history()
